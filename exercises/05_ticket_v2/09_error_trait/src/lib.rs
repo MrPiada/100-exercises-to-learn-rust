@@ -1,11 +1,31 @@
+use std::fmt;
+use std::error::Error;
+
 // TODO: Implement `Debug`, `Display` and `Error` for the `TicketNewError` enum.
 //  When implementing `Display`, you may want to use the `write!` macro from Rust's standard library.
 //  The docs for the `std::fmt` module are a good place to start and look for examples:
 //  https://doc.rust-lang.org/std/fmt/index.html#write
 
+#[derive(Debug)] // Implement Debug using derive
 enum TicketNewError {
     TitleError(String),
     DescriptionError(String),
+}
+
+// Implement Display
+impl fmt::Display for TicketNewError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TicketNewError::TitleError(msg) => write!(f, "{}", msg),
+            TicketNewError::DescriptionError(msg) => write!(f, "{}", msg),
+        }
+    }
+}
+
+// Implement Error
+impl Error for TicketNewError {
+    // source() already defaults to returning None, which is appropriate here
+    // as TicketNewError doesn't wrap another underlying error.
 }
 
 // TODO: `easy_ticket` should panic when the title is invalid, using the error message
@@ -13,7 +33,28 @@ enum TicketNewError {
 //   When the description is invalid, instead, it should use a default description:
 //   "Description not provided".
 fn easy_ticket(title: String, description: String, status: Status) -> Ticket {
-    todo!()
+    match Ticket::new(title.clone(), description.clone(), status.clone()) {
+        Ok(ticket) => {
+            // If Ticket::new succeeds, the title and description are valid
+            // according to its rules. easy_ticket should use this ticket.
+            ticket
+        }
+        Err(TicketNewError::TitleError(msg)) => {
+            // If Ticket::new returns a TitleError, easy_ticket panics with that message.
+            panic!("{}", msg);
+        }
+        Err(TicketNewError::DescriptionError(_)) => {
+            // If Ticket::new returns a DescriptionError (e.g., empty or too long),
+            // easy_ticket uses the default description.
+            // The title must have been valid for Ticket::new to have proceeded to
+            // check the description and return a DescriptionError.
+            Ticket {
+                title, // The original title, which passed validation
+                description: "Description not provided".to_string(),
+                status, // The original status
+            }
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
